@@ -5,11 +5,16 @@
 class RedisClass
 {
 	private $redis;
-	function __construct()
+	protected $host;
+    protected $port;
+
+	function __construct($config,$attr = [])
 	{
 		$this->redis = new Redis();
 		try{
-			$this->redis->connect('127.0.0.1', 6379);
+			$this->host = $config['host'];
+			$this->port = $config['port'] ? $config['port'] : 6379;
+			$this->redis->connect($this->host, $this->port);
 		}catch (Exception $e) {
 			exit($e->getMessage());
 		}
@@ -52,10 +57,14 @@ class RedisClass
 
 	public function hIncrBy($key,$filed,$value){
 		$num = $this->redis->hGet($key,$filed);
-		if($num > 0){
-			return $this->redis->hIncrBy($key,$filed,$value);
+		if($num >= 1){
+			$nums = $this->redis->hIncrBy($key,$filed,$value);
+			if($nums == 0){
+				return $this->redis->hDel($key,$filed);
+			}
+			return $nums;
 		}else{
-			return $this->redis->hIncrBy($key,$filed,abs($num));
+			return $this->redis->hDel($key,$filed);
 		}
 	}
 }
